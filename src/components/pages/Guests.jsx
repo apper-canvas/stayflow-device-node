@@ -543,9 +543,7 @@ error={formErrors.phone}
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
+))}
             </div>
           </>
         )}
