@@ -24,6 +24,8 @@ const [formData, setFormData] = useState({
     lastName: "",
     email: "",
     phone: "",
+    idType: "",
+    idNumber: "",
     address: {
       street: "",
       city: "",
@@ -89,6 +91,8 @@ setFormData({
       lastName: "",
       email: "",
       phone: "",
+      idType: "",
+      idNumber: "",
       address: {
         street: "",
         city: "",
@@ -118,6 +122,8 @@ firstName: guest.firstName || "",
       lastName: guest.lastName || "",
       email: guest.email || "",
       phone: guest.phone || "",
+      idType: guest.idType || "",
+      idNumber: guest.idNumber || "",
       address: {
         street: guest.address?.street || "",
         city: guest.address?.city || "",
@@ -173,13 +179,13 @@ if (name.includes('.')) {
   };
   const validateForm = () => {
     const errors = {};
-
-    if (!formData.firstName.trim()) errors.firstName = "First name is required";
+if (!formData.firstName.trim()) errors.firstName = "First name is required";
     if (!formData.lastName.trim()) errors.lastName = "Last name is required";
     if (!formData.email.trim()) errors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = "Email is invalid";
     if (!formData.phone.trim()) errors.phone = "Phone is required";
-
+    if (!formData.idType.trim()) errors.idType = "ID type is required";
+    if (!formData.idNumber.trim()) errors.idNumber = "ID number is required";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -272,7 +278,27 @@ const guestData = {
                   name="phone"
                   value={formData.phone}
                   onChange={handleFormChange}
-                  error={formErrors.phone}
+error={formErrors.phone}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  label="ID Type"
+                  name="idType"
+                  value={formData.idType}
+                  onChange={handleFormChange}
+                  placeholder="e.g. Passport, Driver's License"
+                  error={formErrors.idType}
+                  required
+                />
+                <FormField
+                  label="ID Number"
+                  name="idNumber"
+                  value={formData.idNumber}
+                  onChange={handleFormChange}
+                  placeholder="Enter ID number"
+                  error={formErrors.idNumber}
                   required
                 />
               </div>
@@ -430,10 +456,11 @@ const guestData = {
           <>
             {/* Table Header */}
 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 text-sm font-medium text-gray-700">
+<div className="grid grid-cols-1 md:grid-cols-7 gap-4 text-sm font-medium text-gray-700">
                 <div>Name</div>
                 <div>Email</div>
                 <div>Phone</div>
+                <div>ID Info</div>
                 <div>Location</div>
                 <div>Status</div>
                 <div>Actions</div>
@@ -441,10 +468,11 @@ const guestData = {
             </div>
 
             {/* Table Body */}
+{/* Table Body */}
             <div className="divide-y divide-gray-200">
-{filteredGuests.map((guest) => (
+              {filteredGuests.map((guest) => (
                 <div key={guest.Id} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                  <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
                     <div>
                       <p className="font-medium text-gray-900">
                         {guest.firstName} {guest.lastName}
@@ -454,7 +482,6 @@ const guestData = {
                           </span>
                         )}
                       </p>
-                      <p className="text-sm text-gray-600">ID: {guest.Id}</p>
                     </div>
                     
                     <div>
@@ -463,6 +490,11 @@ const guestData = {
                     
                     <div>
                       <p className="text-gray-900">{guest.phone}</p>
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm font-medium">{guest.idType}</div>
+                      <div className="text-xs text-gray-500">{guest.idNumber}</div>
                     </div>
                     
                     <div>
@@ -512,6 +544,8 @@ const guestData = {
                   </div>
                 </div>
               ))}
+            </div>
+          </>
             </div>
           </>
         )}

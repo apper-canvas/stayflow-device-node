@@ -123,11 +123,13 @@ const ReservationForm = ({ reservation, onSubmit, onCancel }) => {
       
       // Create new guest if not selected
       if (!guestId) {
-        const newGuest = {
+const newGuest = {
           firstName: formData.guestFirstName,
           lastName: formData.guestLastName,
           email: formData.guestEmail,
           phone: formData.guestPhone,
+          idType: formData.guestIdType || "",
+          idNumber: formData.guestIdNumber || "",
           address: {
             street: "",
             city: "",
@@ -237,6 +239,22 @@ const ReservationForm = ({ reservation, onSubmit, onCancel }) => {
             error={errors.guestPhone}
             disabled={!!formData.guestId}
             placeholder="Enter phone number"
+/>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label="ID Type"
+            name="guestIdType"
+            value={formData.guestIdType}
+            onChange={handleChange}
+            placeholder="e.g. Passport, Driver's License"
+          />
+          <FormField
+            label="ID Number"
+            name="guestIdNumber"
+            value={formData.guestIdNumber}
+            onChange={handleChange}
+            placeholder="Enter ID number"
           />
         </div>
 

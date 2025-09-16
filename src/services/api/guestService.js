@@ -23,6 +23,8 @@ this.data = [...guestData];
 const newGuest = {
       Id: this.nextId++,
       ...guestData,
+      idType: guestData.idType || "",
+      idNumber: guestData.idNumber || "",
       createdAt: new Date().toISOString(),
       stayHistory: [],
       vipStatus: guestData.vipStatus || false,
@@ -41,10 +43,12 @@ async update(id, updateData) {
     const index = this.data.findIndex(item => item.Id === id);
     if (index === -1) throw new Error("Guest not found");
     
-    // Ensure VIP status and loyalty program are properly handled
+    // Ensure all fields including ID fields are properly handled
     const updatedGuest = {
       ...this.data[index],
       ...updateData,
+      idType: updateData.idType !== undefined ? updateData.idType : this.data[index].idType,
+      idNumber: updateData.idNumber !== undefined ? updateData.idNumber : this.data[index].idNumber,
       vipStatus: updateData.vipStatus !== undefined ? updateData.vipStatus : this.data[index].vipStatus,
       loyaltyProgram: updateData.loyaltyProgram 
         ? { ...this.data[index].loyaltyProgram, ...updateData.loyaltyProgram }

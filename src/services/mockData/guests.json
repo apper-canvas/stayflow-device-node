@@ -1,9 +1,11 @@
 [
-  {
+{
     "Id": 1,
     "firstName": "Sarah",
     "lastName": "Johnson",
     "email": "sarah.johnson@email.com",
+    "idType": "Passport",
+    "idNumber": "A12345678",
     "phone": "(555) 123-4567",
     "address": {
       "street": "123 Main St",
@@ -26,13 +28,15 @@
         "roomNumber": "301",
         "rating": 5
       }
-    ],
+],
     "createdAt": "2024-01-10T10:00:00Z"
   },
   {
     "Id": 2,
     "firstName": "Michael",
-    "lastName": "Brown",
+    "lastName": "Chen",
+    "idType": "Driver's License",
+    "idNumber": "DL987654321",
     "email": "michael.brown@email.com",
     "phone": "(555) 234-5678",
     "address": {
@@ -57,13 +61,15 @@
         "rating": 4
       }
     ],
-    "createdAt": "2024-01-18T14:30:00Z"
+"createdAt": "2024-01-18T14:30:00Z"
   },
   {
     "Id": 3,
     "firstName": "Emily",
     "lastName": "Davis",
     "email": "emily.davis@email.com",
+    "idType": "Passport",
+    "idNumber": "B98765432",
     "phone": "(555) 345-6789",
     "address": {
       "street": "789 Pine St",
@@ -80,13 +86,15 @@
     },
     "stayHistory": [],
     "createdAt": "2024-01-25T09:15:00Z"
-  },
+},
   {
     "Id": 4,
     "firstName": "David",
     "lastName": "Wilson",
     "email": "david.wilson@email.com",
-    "phone": "(555) 456-7890",
+    "idType": "State ID",
+    "idNumber": "ID456789123",
+"phone": "(555) 456-7890",
     "address": {
       "street": "321 Elm St",
       "city": "Houston",
@@ -109,13 +117,15 @@
         "rating": 5
       }
     ],
-    "createdAt": "2024-01-28T16:45:00Z"
+"createdAt": "2024-01-28T16:45:00Z"
   },
   {
     "Id": 5,
     "firstName": "Jessica",
-    "lastName": "Martinez",
-    "email": "jessica.martinez@email.com",
+    "lastName": "Brown",
+    "email": "jessica.brown@email.com",
+    "idType": "Driver's License",
+    "idNumber": "DL123456789",
     "phone": "(555) 567-8901",
     "address": {
       "street": "654 Maple Dr",
