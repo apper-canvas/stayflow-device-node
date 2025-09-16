@@ -38,7 +38,16 @@ const [formData, setFormData] = useState({
       tier: "",
       points: 0,
       joinDate: ""
-    }
+    },
+    // Corporate account fields
+    accountType: "individual",
+    companyName: "",
+    companyRegistration: "",
+    taxId: "",
+    billingContact: "",
+    creditLimit: 0,
+    paymentTerms: "net30",
+    corporateDiscount: 0
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -46,9 +55,11 @@ const [formData, setFormData] = useState({
     loadGuests();
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     filterGuests();
-  }, [guests, searchQuery]);
+  }, [guests, searchQuery, accountTypeFilter]);
+
+  const [accountTypeFilter, setAccountTypeFilter] = useState("all");
 
   const loadGuests = async () => {
     try {
@@ -64,14 +75,22 @@ const [formData, setFormData] = useState({
   };
 
   const filterGuests = () => {
-    let filtered = [...guests];
+let filtered = [...guests];
+
+    // Filter by account type
+    if (accountTypeFilter !== "all") {
+      filtered = filtered.filter(guest => 
+        guest.accountType === accountTypeFilter
+      );
+    }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(guest =>
         `${guest.firstName} ${guest.lastName}`.toLowerCase().includes(query) ||
         guest.email.toLowerCase().includes(query) ||
-        guest.phone.includes(query)
+        guest.phone.includes(query) ||
+        (guest.companyName && guest.companyName.toLowerCase().includes(query))
       );
     }
 
@@ -105,7 +124,15 @@ setFormData({
         tier: "",
         points: 0,
         joinDate: ""
-      }
+      },
+      accountType: "individual",
+      companyName: "",
+      companyRegistration: "",
+      taxId: "",
+      billingContact: "",
+      creditLimit: 0,
+      paymentTerms: "net30",
+      corporateDiscount: 0
     });
     setFormErrors({});
   };
@@ -117,8 +144,8 @@ setFormData({
   };
 
   const handleEditGuest = (guest) => {
-    setFormData({
-firstName: guest.firstName || "",
+setFormData({
+      firstName: guest.firstName || "",
       lastName: guest.lastName || "",
       email: guest.email || "",
       phone: guest.phone || "",
@@ -136,7 +163,15 @@ firstName: guest.firstName || "",
         tier: guest.loyaltyProgram?.tier || "",
         points: guest.loyaltyProgram?.points || 0,
         joinDate: guest.loyaltyProgram?.joinDate || ""
-      }
+      },
+      accountType: guest.accountType || "individual",
+      companyName: guest.companyName || "",
+      companyRegistration: guest.companyRegistration || "",
+      taxId: guest.taxId || "",
+      billingContact: guest.billingContact || "",
+      creditLimit: guest.creditLimit || 0,
+      paymentTerms: guest.paymentTerms || "net30",
+      corporateDiscount: guest.corporateDiscount || 0
     });
     setSelectedGuest(guest);
     setFormErrors({});
@@ -155,9 +190,10 @@ firstName: guest.firstName || "",
     }
   };
 
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-if (name.includes('.')) {
+const handleFormChange = (e) => {
+    const { name, value, type } = e.target;
+    
+    if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
         ...prev,
@@ -168,6 +204,8 @@ if (name.includes('.')) {
       }));
     } else if (name === "vipStatus") {
       setFormData(prev => ({ ...prev, [name]: value === "true" }));
+    } else if (type === "number") {
+      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -178,14 +216,24 @@ if (name.includes('.')) {
     }
   };
   const validateForm = () => {
-    const errors = {};
-if (!formData.firstName.trim()) errors.firstName = "First name is required";
+const errors = {};
+    
+    if (!formData.firstName.trim()) errors.firstName = "First name is required";
     if (!formData.lastName.trim()) errors.lastName = "Last name is required";
     if (!formData.email.trim()) errors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = "Email is invalid";
     if (!formData.phone.trim()) errors.phone = "Phone is required";
     if (!formData.idType.trim()) errors.idType = "ID type is required";
     if (!formData.idNumber.trim()) errors.idNumber = "ID number is required";
+    
+    // Corporate account validation
+    if (formData.accountType === "corporate") {
+      if (!formData.companyName.trim()) errors.companyName = "Company name is required";
+      if (!formData.companyRegistration.trim()) errors.companyRegistration = "Company registration is required";
+      if (!formData.taxId.trim()) errors.taxId = "Tax ID is required";
+      if (!formData.billingContact.trim()) errors.billingContact = "Billing contact is required";
+    }
+    
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -203,7 +251,10 @@ const guestData = {
         loyaltyProgram: {
           ...formData.loyaltyProgram,
           joinDate: formData.loyaltyProgram.joinDate || new Date().toISOString().split('T')[0]
-        }
+        },
+        // Ensure corporate fields are properly handled
+        creditLimit: formData.accountType === "corporate" ? formData.creditLimit : 0,
+        corporateDiscount: formData.accountType === "corporate" ? formData.corporateDiscount : 0
       };
 
       if (selectedGuest) {
@@ -240,8 +291,109 @@ const guestData = {
 
         <div className="bg-white rounded-lg shadow-card p-6">
           <form onSubmit={handleFormSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">Account Information</h3>
+                
+                <FormField
+                  label="Account Type"
+                  type="select"
+                  name="accountType"
+                  value={formData.accountType}
+                  onChange={handleFormChange}
+                  required
+                >
+                  <option value="individual">Individual Guest</option>
+                  <option value="corporate">Corporate Account</option>
+                </FormField>
+
+                {formData.accountType === "corporate" && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
+                    <h4 className="font-medium text-blue-900 flex items-center">
+                      <ApperIcon name="Building2" size={16} className="mr-2" />
+                      Corporate Information
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        label="Company Name"
+                        name="companyName"
+                        value={formData.companyName}
+                        onChange={handleFormChange}
+                        error={formErrors.companyName}
+                        required
+                        placeholder="Enter company name"
+                      />
+
+                      <FormField
+                        label="Company Registration"
+                        name="companyRegistration"
+                        value={formData.companyRegistration}
+                        onChange={handleFormChange}
+                        error={formErrors.companyRegistration}
+                        required
+                        placeholder="Registration number"
+                      />
+
+                      <FormField
+                        label="Tax ID"
+                        name="taxId"
+                        value={formData.taxId}
+                        onChange={handleFormChange}
+                        error={formErrors.taxId}
+                        required
+                        placeholder="Tax identification number"
+                      />
+
+                      <FormField
+                        label="Billing Contact"
+                        name="billingContact"
+                        value={formData.billingContact}
+                        onChange={handleFormChange}
+                        error={formErrors.billingContact}
+                        required
+                        placeholder="Billing contact person"
+                      />
+
+                      <FormField
+                        label="Credit Limit ($)"
+                        type="number"
+                        name="creditLimit"
+                        value={formData.creditLimit}
+                        onChange={handleFormChange}
+                        min="0"
+                        step="100"
+                        placeholder="0"
+                      />
+
+                      <FormField
+                        label="Payment Terms"
+                        type="select"
+                        name="paymentTerms"
+                        value={formData.paymentTerms}
+                        onChange={handleFormChange}
+                      >
+                        <option value="net30">Net 30 days</option>
+                        <option value="net60">Net 60 days</option>
+                        <option value="net90">Net 90 days</option>
+                        <option value="due_on_receipt">Due on Receipt</option>
+                      </FormField>
+
+                      <FormField
+                        label="Corporate Discount (%)"
+                        type="number"
+                        name="corporateDiscount"
+                        value={formData.corporateDiscount}
+                        onChange={handleFormChange}
+                        min="0"
+                        max="50"
+                        step="1"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                )}
+                
                 <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -415,27 +567,54 @@ error={formErrors.phone}
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Guests</h1>
-          <p className="text-gray-600">Manage guest information and profiles</p>
+          <h1 className="text-2xl font-bold text-gray-900">Guests & Corporate Accounts</h1>
+          <p className="text-gray-600">Manage guest information, profiles, and corporate accounts</p>
         </div>
-        <Button 
-          onClick={handleCreateGuest}
-          className="btn-gradient"
-        >
-          <ApperIcon name="UserPlus" size={16} className="mr-2" />
-          Add Guest
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => {
+              setFormData(prev => ({ ...prev, accountType: "corporate" }));
+              handleCreateGuest();
+            }}
+            variant="outline"
+          >
+            <ApperIcon name="Building2" size={16} className="mr-2" />
+            Add Corporate
+          </Button>
+          <Button 
+            onClick={handleCreateGuest}
+            className="btn-gradient"
+          >
+            <ApperIcon name="UserPlus" size={16} className="mr-2" />
+            Add Guest
+          </Button>
+        </div>
       </div>
 
-      {/* Search */}
+      {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow-card p-6">
-        <SearchBar
-          placeholder="Search by name, email, or phone number..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <SearchBar
+              placeholder="Search by name, email, phone, or company name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="md:w-48">
+            <select
+              value={accountTypeFilter}
+              onChange={(e) => setAccountTypeFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="all">All Account Types</option>
+              <option value="individual">Individual Guests</option>
+              <option value="corporate">Corporate Accounts</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Guests List */}
@@ -456,10 +635,11 @@ error={formErrors.phone}
           <>
             {/* Table Header */}
 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-<div className="grid grid-cols-1 md:grid-cols-7 gap-4 text-sm font-medium text-gray-700">
-                <div>Name</div>
+              <div className="grid grid-cols-1 md:grid-cols-8 gap-4 text-sm font-medium text-gray-700">
+                <div>Name / Company</div>
                 <div>Email</div>
                 <div>Phone</div>
+                <div>Account Type</div>
                 <div>ID Info</div>
                 <div>Location</div>
                 <div>Status</div>
@@ -469,19 +649,30 @@ error={formErrors.phone}
 
             {/* Table Body */}
 {/* Table Body */}
-            <div className="divide-y divide-gray-200">
+<div className="divide-y divide-gray-200">
               {filteredGuests.map((guest) => (
                 <div key={guest.Id} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
+                  <div className="grid grid-cols-1 md:grid-cols-8 gap-4 items-center">
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {guest.firstName} {guest.lastName}
-                        {guest.vipStatus && (
-                          <span className="ml-2">
-                            <ApperIcon name="Star" size={16} className="inline text-yellow-500" />
-                          </span>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900">
+                          {guest.firstName} {guest.lastName}
+                          {guest.vipStatus && (
+                            <span className="ml-2">
+                              <ApperIcon name="Star" size={16} className="inline text-yellow-500" />
+                            </span>
+                          )}
+                        </p>
+                        {guest.accountType === "corporate" && (
+                          <Badge variant="secondary" size="sm">
+                            <ApperIcon name="Building2" size={12} className="mr-1" />
+                            Corporate
+                          </Badge>
                         )}
-                      </p>
+                      </div>
+                      {guest.accountType === "corporate" && guest.companyName && (
+                        <p className="text-sm text-blue-600 font-medium">{guest.companyName}</p>
+                      )}
                     </div>
                     
                     <div>
@@ -506,18 +697,49 @@ error={formErrors.phone}
                       </p>
                     </div>
                     
+<div>
+                      <Badge 
+                        variant={guest.accountType === "corporate" ? "info" : "default"} 
+                        size="sm"
+                      >
+                        {guest.accountType === "corporate" ? "Corporate" : "Individual"}
+                      </Badge>
+                      {guest.accountType === "corporate" && guest.corporateDiscount > 0 && (
+                        <p className="text-xs text-green-600 mt-1">
+                          {guest.corporateDiscount}% discount
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="font-medium text-gray-900">{guest.idType || "N/A"}</p>
+                      <p className="text-sm text-gray-600">{guest.idNumber || "Not provided"}</p>
+                    </div>
+
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {guest.address?.city || "N/A"}, {guest.address?.state || "N/A"}
+                      </p>
+                      <p className="text-sm text-gray-600">{guest.address?.zipCode || ""}</p>
+                    </div>
+
                     <div className="flex flex-col space-y-1">
                       {guest.vipStatus && (
-                        <Badge variant="vip" size="sm">
+                        <Badge variant="warning" size="sm">
                           VIP Guest
                         </Badge>
                       )}
                       {guest.loyaltyProgram?.tier && (
                         <Badge 
-                          variant={guest.loyaltyProgram.tier.toLowerCase()} 
+                          variant={guest.loyaltyProgram.tier.toLowerCase() === "gold" ? "warning" : "info"} 
                           size="sm"
                         >
                           {guest.loyaltyProgram.tier} ({guest.loyaltyProgram.points} pts)
+                        </Badge>
+                      )}
+                      {guest.accountType === "corporate" && guest.creditLimit > 0 && (
+                        <Badge variant="success" size="sm">
+                          Credit: ${guest.creditLimit}
                         </Badge>
                       )}
                     </div>

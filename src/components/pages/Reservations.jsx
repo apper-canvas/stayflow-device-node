@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { format } from "date-fns";
+import reservationService from "@/services/api/reservationService";
 import ApperIcon from "@/components/ApperIcon";
+import ReservationForm from "@/components/organisms/ReservationForm";
+import SearchBar from "@/components/molecules/SearchBar";
 import Button from "@/components/atoms/Button";
 import Badge from "@/components/atoms/Badge";
-import SearchBar from "@/components/molecules/SearchBar";
-import ReservationForm from "@/components/organisms/ReservationForm";
+import Empty from "@/components/ui/Empty";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
-import Empty from "@/components/ui/Empty";
-import reservationService from "@/services/api/reservationService";
-import { format } from "date-fns";
 
 const Reservations = () => {
-  const [reservations, setReservations] = useState([]);
+const [reservations, setReservations] = useState([]);
   const [filteredReservations, setFilteredReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,14 +20,17 @@ const Reservations = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
-
+  const [bookingType, setBookingType] = useState("individual"); // individual, group, corporate
+  const [showModificationHistory, setShowModificationHistory] = useState(null);
+  const [groupFilter, setGroupFilter] = useState("all");
+  const [corporateFilter, setCorporateFilter] = useState("all");
   useEffect(() => {
     loadReservations();
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     filterReservations();
-  }, [reservations, searchQuery, statusFilter]);
+  }, [reservations, searchQuery, statusFilter, groupFilter, corporateFilter]);
 
   const loadReservations = async () => {
     try {
@@ -42,7 +45,7 @@ const Reservations = () => {
     }
   };
 
-  const filterReservations = () => {
+const filterReservations = () => {
     let filtered = [...reservations];
 
     // Filter by status
@@ -52,13 +55,30 @@ const Reservations = () => {
       );
     }
 
+    // Filter by group bookings
+    if (groupFilter === "group") {
+      filtered = filtered.filter(reservation => reservation.isGroupBooking);
+    } else if (groupFilter === "individual") {
+      filtered = filtered.filter(reservation => !reservation.isGroupBooking);
+    }
+
+    // Filter by corporate accounts
+    if (corporateFilter === "corporate") {
+      filtered = filtered.filter(reservation => reservation.corporateAccount);
+    } else if (corporateFilter === "individual") {
+      filtered = filtered.filter(reservation => !reservation.corporateAccount);
+    }
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(reservation =>
         reservation.guestName.toLowerCase().includes(query) ||
         reservation.roomNumber.toString().includes(query) ||
-        reservation.Id.toString().includes(query)
+        reservation.Id.toString().includes(query) ||
+        (reservation.groupId && reservation.groupId.toLowerCase().includes(query)) ||
+        (reservation.corporateAccount?.companyName && 
+         reservation.corporateAccount.companyName.toLowerCase().includes(query))
       );
     }
 
@@ -79,17 +99,46 @@ const Reservations = () => {
   };
 
   const handleDeleteReservation = async (reservation) => {
-    if (window.confirm("Are you sure you want to cancel this reservation?")) {
+const result = window.confirm(
+      "Are you sure you want to cancel this reservation?\n\n" +
+      "Please note:\n" +
+      "• Cancellation fees may apply based on the cancellation policy\n" +
+      "• Refunds will be processed according to the policy terms"
+    );
+    
+    if (result) {
       try {
-        await reservationService.update(reservation.Id, {
-          ...reservation,
-          status: "Cancelled"
-        });
-        toast.success("Reservation cancelled successfully!");
-        loadReservations();
+        const cancellationReason = prompt("Please provide a reason for cancellation:");
+        if (cancellationReason !== null) {
+          // Calculate refund based on cancellation policy
+          const refundAmount = calculateRefund(reservation);
+          
+          await reservationService.cancelWithRefund(
+            reservation.Id, 
+            cancellationReason,
+            refundAmount
+          );
+          
+          toast.success(
+            `Reservation cancelled successfully! ${refundAmount > 0 ? `Refund of $${refundAmount} will be processed.` : ''}`
+          );
+          loadReservations();
+        }
       } catch (error) {
         toast.error("Failed to cancel reservation");
       }
+    }
+
+    function calculateRefund(reservation) {
+      const checkInDate = new Date(reservation.checkIn);
+      const now = new Date();
+      const daysUntilCheckIn = Math.ceil((checkInDate - now) / (1000 * 60 * 60 * 24));
+      
+      // Standard refund policy
+      if (daysUntilCheckIn > 7) return reservation.totalAmount * 0.9; // 90% refund
+      if (daysUntilCheckIn > 3) return reservation.totalAmount * 0.5; // 50% refund
+      if (daysUntilCheckIn > 0) return reservation.totalAmount * 0.25; // 25% refund
+      return 0; // No refund for same-day cancellation
     }
   };
 
@@ -123,21 +172,56 @@ const Reservations = () => {
     } catch (error) {
       toast.error("Failed to check out guest");
     }
-  };
+};
 
+  const handleViewGroup = (reservation) => {
+    if (reservation.groupId) {
+      // Filter reservations by group ID to show all related bookings
+      const groupReservations = reservations.filter(r => r.groupId === reservation.groupId);
+      
+      // Create a summary of the group booking
+      const groupSummary = {
+        groupId: reservation.groupId,
+        totalRooms: groupReservations.length,
+        totalGuests: groupReservations.reduce((sum, r) => sum + (r.guestCount || 1), 0),
+        checkInDate: reservation.checkIn,
+        checkOutDate: reservation.checkOut,
+        reservations: groupReservations
+      };
+
+      // Show group details in a modal or alert for now
+      const message = `Group Booking Details:\n\n` +
+        `Group ID: ${groupSummary.groupId}\n` +
+        `Total Rooms: ${groupSummary.totalRooms}\n` +
+        `Total Guests: ${groupSummary.totalGuests}\n` +
+        `Check-in: ${format(new Date(groupSummary.checkInDate), "MMM d, yyyy")}\n` +
+        `Check-out: ${format(new Date(groupSummary.checkOutDate), "MMM d, yyyy")}\n\n` +
+        `Rooms:\n${groupSummary.reservations.map(r => 
+          `• Room ${r.roomNumber} - ${r.guestName}`
+        ).join('\n')}`;
+
+      alert(message);
+    }
+  };
   if (loading) return <Loading />;
   if (error) return <Error message="Failed to load reservations" description={error} onRetry={loadReservations} />;
 
   if (showForm) {
     return (
-      <div className="space-y-6">
+<div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {selectedReservation ? "Edit Reservation" : "New Reservation"}
+              {selectedReservation ? "Edit Reservation" : 
+               bookingType === "group" ? "New Group Booking" :
+               bookingType === "corporate" ? "New Corporate Booking" : 
+               "New Reservation"}
             </h1>
             <p className="text-gray-600">
-              {selectedReservation ? "Update reservation details" : "Create a new reservation for a guest"}
+              {selectedReservation ? "Update reservation details" : 
+               bookingType === "group" ? "Create a group booking with multiple rooms" :
+               bookingType === "corporate" ? "Create a corporate account booking" :
+               "Create a new reservation for a guest"}
             </p>
           </div>
         </div>
@@ -145,8 +229,12 @@ const Reservations = () => {
         <div className="bg-white rounded-lg shadow-card p-6">
           <ReservationForm
             reservation={selectedReservation}
+            bookingType={bookingType}
             onSubmit={handleFormSubmit}
-            onCancel={() => setShowForm(false)}
+            onCancel={() => {
+              setShowForm(false);
+              setBookingType("individual");
+            }}
           />
         </div>
       </div>
@@ -180,19 +268,45 @@ const Reservations = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="sm:w-48">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="all">All Status</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="checked in">Checked In</option>
-              <option value="checked out">Checked Out</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="pending">Pending</option>
-            </select>
+<div className="flex flex-wrap gap-4">
+            <div className="sm:w-48">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="all">All Status</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="checked in">Checked In</option>
+                <option value="checked out">Checked Out</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+            
+            <div className="sm:w-48">
+              <select
+                value={groupFilter}
+                onChange={(e) => setGroupFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="all">All Bookings</option>
+                <option value="individual">Individual</option>
+                <option value="group">Group Bookings</option>
+              </select>
+            </div>
+            
+            <div className="sm:w-48">
+              <select
+                value={corporateFilter}
+                onChange={(e) => setCorporateFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="all">All Accounts</option>
+                <option value="individual">Individual</option>
+                <option value="corporate">Corporate</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -227,12 +341,32 @@ const Reservations = () => {
 
             {/* Table Body */}
             <div className="divide-y divide-gray-200">
-              {filteredReservations.map((reservation) => (
+{filteredReservations.map((reservation) => (
                 <div key={reservation.Id} className="px-6 py-4 hover:bg-gray-50">
                   <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 items-center">
                     <div>
-                      <p className="font-medium text-gray-900">{reservation.guestName}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900">{reservation.guestName}</p>
+                        {reservation.isGroupBooking && (
+                          <Badge variant="info" size="sm">
+                            <ApperIcon name="Users" size={12} className="mr-1" />
+                            Group
+                          </Badge>
+                        )}
+                        {reservation.corporateAccount && (
+                          <Badge variant="secondary" size="sm">
+                            <ApperIcon name="Building2" size={12} className="mr-1" />
+                            Corporate
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600">ID: {reservation.Id}</p>
+                      {reservation.groupId && (
+                        <p className="text-xs text-blue-600">Group: {reservation.groupId}</p>
+                      )}
+                      {reservation.corporateAccount && (
+                        <p className="text-xs text-purple-600">{reservation.corporateAccount.companyName}</p>
+                      )}
                     </div>
                     
                     <div>
@@ -272,7 +406,7 @@ const Reservations = () => {
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+<div className="flex items-center space-x-2 flex-wrap">
                       {reservation.status === "Confirmed" && (
                         <Button
                           size="sm"
@@ -292,6 +426,28 @@ const Reservations = () => {
                         >
                           <ApperIcon name="LogOut" size={14} className="mr-1" />
                           Check Out
+                        </Button>
+                      )}
+                      
+                      {reservation.modificationHistory && reservation.modificationHistory.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setShowModificationHistory(reservation)}
+                        >
+                          <ApperIcon name="History" size={14} className="mr-1" />
+                          History
+                        </Button>
+                      )}
+                      
+                      {reservation.isGroupBooking && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewGroup(reservation)}
+                        >
+                          <ApperIcon name="Users" size={14} className="mr-1" />
+                          View Group
                         </Button>
                       )}
                       
