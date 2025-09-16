@@ -55,11 +55,11 @@ const [formData, setFormData] = useState({
     loadGuests();
   }, []);
 
-useEffect(() => {
+const [accountTypeFilter, setAccountTypeFilter] = useState("all");
+  
+  useEffect(() => {
     filterGuests();
   }, [guests, searchQuery, accountTypeFilter]);
-
-  const [accountTypeFilter, setAccountTypeFilter] = useState("all");
 
   const loadGuests = async () => {
     try {
