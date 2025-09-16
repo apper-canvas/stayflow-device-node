@@ -6,6 +6,7 @@ import Dashboard from "@/components/pages/Dashboard";
 import Reservations from "@/components/pages/Reservations";
 import Guests from "@/components/pages/Guests";
 import Rooms from "@/components/pages/Rooms";
+import Tasks from "@/components/pages/Tasks";
 import Billing from "@/components/pages/Billing";
 import Reports from "@/components/pages/Reports";
 
@@ -20,7 +21,8 @@ function App() {
             <Route path="/guests" element={<Guests />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/billing" element={<Billing />} />
-            <Route path="/reports" element={<Reports />} />
+<Route path="/reports" element={<Reports />} />
+            <Route path="/tasks" element={<Tasks />} />
           </Routes>
         </Layout>
         <ToastContainer

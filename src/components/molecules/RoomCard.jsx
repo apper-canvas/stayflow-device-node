@@ -39,6 +39,17 @@ const RoomCard = ({
     }
   };
 
+const formatLastCleaned = (dateString) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
+
   return (
     <div className={`bg-white rounded-lg shadow-card p-4 card-hover ${className}`}>
       <div className="flex items-center justify-between mb-3">
@@ -57,6 +68,9 @@ const RoomCard = ({
         </p>
         <p className="text-sm text-gray-600">
           <span className="font-medium">Rate:</span> ${room.rate}/night
+        </p>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Last Cleaned:</span> {formatLastCleaned(room.lastCleaned)}
         </p>
         {room.amenities && room.amenities.length > 0 && (
           <p className="text-sm text-gray-600">
