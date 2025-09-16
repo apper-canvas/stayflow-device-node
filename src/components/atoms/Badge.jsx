@@ -7,7 +7,7 @@ const Badge = ({
   size = "md",
   className = "" 
 }) => {
-  const baseStyles = "inline-flex items-center font-medium rounded-full";
+const baseStyles = "inline-flex items-center font-medium rounded-full";
   
   const variants = {
     default: "bg-gray-100 text-gray-800",
@@ -19,11 +19,16 @@ const Badge = ({
     available: "bg-green-100 text-green-800",
     occupied: "bg-red-100 text-red-800",
     cleaning: "bg-yellow-100 text-yellow-800",
-maintenance: "bg-orange-100 text-orange-800",
+    maintenance: "bg-orange-100 text-orange-800",
     confirmed: "bg-green-100 text-green-800",
     pending: "bg-yellow-100 text-yellow-800",
     cancelled: "bg-red-100 text-red-800",
-    checkedin: "bg-blue-100 text-blue-800"
+    checkedin: "bg-blue-100 text-blue-800",
+    vip: "bg-purple-100 text-purple-800",
+    bronze: "bg-orange-100 text-orange-800",
+    silver: "bg-gray-100 text-gray-800",
+    gold: "bg-yellow-100 text-yellow-800",
+    platinum: "bg-purple-100 text-purple-800"
   };
   
   const sizes = {

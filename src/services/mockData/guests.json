@@ -12,6 +12,12 @@
       "zipCode": "10001"
     },
     "preferences": ["Non-smoking", "High floor", "City view"],
+    "vipStatus": true,
+    "loyaltyProgram": {
+      "tier": "Gold",
+      "points": 2500,
+      "joinDate": "2023-06-15"
+    },
     "stayHistory": [
       {
         "reservationId": 1,
@@ -36,6 +42,12 @@
       "zipCode": "90210"
     },
     "preferences": ["Smoking allowed", "Pool access", "Late check-out"],
+    "vipStatus": false,
+    "loyaltyProgram": {
+      "tier": "Silver",
+      "points": 1200,
+      "joinDate": "2023-08-20"
+    },
     "stayHistory": [
       {
         "reservationId": 2,
@@ -60,6 +72,12 @@
       "zipCode": "60601"
     },
     "preferences": ["Quiet room", "Ground floor", "Extra towels"],
+    "vipStatus": false,
+    "loyaltyProgram": {
+      "tier": "Bronze",
+      "points": 450,
+      "joinDate": "2024-01-15"
+    },
     "stayHistory": [],
     "createdAt": "2024-01-25T09:15:00Z"
   },
@@ -76,6 +94,12 @@
       "zipCode": "77001"
     },
     "preferences": ["Business amenities", "WiFi", "Room service"],
+    "vipStatus": true,
+    "loyaltyProgram": {
+      "tier": "Platinum",
+      "points": 4200,
+      "joinDate": "2022-11-10"
+    },
     "stayHistory": [
       {
         "reservationId": 3,
@@ -100,6 +124,12 @@
       "zipCode": "85001"
     },
     "preferences": ["Spa access", "Ocean view", "Mini bar"],
+    "vipStatus": false,
+    "loyaltyProgram": {
+      "tier": "",
+      "points": 0,
+      "joinDate": ""
+    },
     "stayHistory": [],
     "createdAt": "2024-02-05T11:20:00Z"
   }

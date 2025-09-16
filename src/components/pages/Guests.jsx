@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { format } from "date-fns";
+import guestService from "@/services/api/guestService";
 import ApperIcon from "@/components/ApperIcon";
-import Button from "@/components/atoms/Button";
 import SearchBar from "@/components/molecules/SearchBar";
 import FormField from "@/components/molecules/FormField";
+import Button from "@/components/atoms/Button";
+import Badge from "@/components/atoms/Badge";
+import Empty from "@/components/ui/Empty";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
-import Empty from "@/components/ui/Empty";
-import guestService from "@/services/api/guestService";
-import { format } from "date-fns";
 
 const Guests = () => {
   const [guests, setGuests] = useState([]);
@@ -18,7 +19,7 @@ const Guests = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selectedGuest, setSelectedGuest] = useState(null);
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
@@ -29,7 +30,13 @@ const Guests = () => {
       state: "",
       zipCode: ""
     },
-    preferences: []
+    preferences: [],
+    vipStatus: false,
+    loyaltyProgram: {
+      tier: "",
+      points: 0,
+      joinDate: ""
+    }
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -77,7 +84,7 @@ const Guests = () => {
   };
 
   const resetForm = () => {
-    setFormData({
+setFormData({
       firstName: "",
       lastName: "",
       email: "",
@@ -88,7 +95,13 @@ const Guests = () => {
         state: "",
         zipCode: ""
       },
-      preferences: []
+      preferences: [],
+      vipStatus: false,
+      loyaltyProgram: {
+        tier: "",
+        points: 0,
+        joinDate: ""
+      }
     });
     setFormErrors({});
   };
@@ -101,7 +114,7 @@ const Guests = () => {
 
   const handleEditGuest = (guest) => {
     setFormData({
-      firstName: guest.firstName || "",
+firstName: guest.firstName || "",
       lastName: guest.lastName || "",
       email: guest.email || "",
       phone: guest.phone || "",
@@ -111,7 +124,13 @@ const Guests = () => {
         state: guest.address?.state || "",
         zipCode: guest.address?.zipCode || ""
       },
-      preferences: guest.preferences || []
+      preferences: guest.preferences || [],
+      vipStatus: guest.vipStatus || false,
+      loyaltyProgram: {
+        tier: guest.loyaltyProgram?.tier || "",
+        points: guest.loyaltyProgram?.points || 0,
+        joinDate: guest.loyaltyProgram?.joinDate || ""
+      }
     });
     setSelectedGuest(guest);
     setFormErrors({});
@@ -132,8 +151,7 @@ const Guests = () => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    
-    if (name.includes('.')) {
+if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
         ...prev,
@@ -142,6 +160,8 @@ const Guests = () => {
           [child]: value
         }
       }));
+    } else if (name === "vipStatus") {
+      setFormData(prev => ({ ...prev, [name]: value === "true" }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -151,7 +171,6 @@ const Guests = () => {
       setFormErrors(prev => ({ ...prev, [name]: "" }));
     }
   };
-
   const validateForm = () => {
     const errors = {};
 
@@ -171,10 +190,14 @@ const Guests = () => {
     if (!validateForm()) return;
 
     try {
-      const guestData = {
+const guestData = {
         ...formData,
         stayHistory: selectedGuest?.stayHistory || [],
-        createdAt: selectedGuest?.createdAt || new Date().toISOString()
+        createdAt: selectedGuest?.createdAt || new Date().toISOString(),
+        loyaltyProgram: {
+          ...formData.loyaltyProgram,
+          joinDate: formData.loyaltyProgram.joinDate || new Date().toISOString().split('T')[0]
+        }
       };
 
       if (selectedGuest) {
@@ -254,7 +277,7 @@ const Guests = () => {
                 />
               </div>
 
-              <div className="space-y-4">
+<div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900">Address</h3>
                 
                 <FormField
@@ -283,6 +306,60 @@ const Guests = () => {
                   label="ZIP Code"
                   name="address.zipCode"
                   value={formData.address.zipCode}
+                  onChange={handleFormChange}
+                />
+              </div>
+              
+              {/* VIP Status Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">VIP Status</h3>
+                
+                <FormField
+                  label="VIP Status"
+                  name="vipStatus"
+                  type="select"
+                  value={formData.vipStatus.toString()}
+                  onChange={handleFormChange}
+                >
+                  <option value="false">Regular Guest</option>
+                  <option value="true">VIP Guest</option>
+                </FormField>
+              </div>
+
+              {/* Loyalty Program Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">Loyalty Program</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    label="Loyalty Tier"
+                    name="loyaltyProgram.tier"
+                    type="select"
+                    value={formData.loyaltyProgram.tier}
+                    onChange={handleFormChange}
+                  >
+                    <option value="">No Program</option>
+                    <option value="Bronze">Bronze</option>
+                    <option value="Silver">Silver</option>
+                    <option value="Gold">Gold</option>
+                    <option value="Platinum">Platinum</option>
+                  </FormField>
+                  
+                  <FormField
+                    label="Loyalty Points"
+                    name="loyaltyProgram.points"
+                    type="number"
+                    value={formData.loyaltyProgram.points}
+                    onChange={handleFormChange}
+                    min="0"
+                  />
+                </div>
+
+                <FormField
+                  label="Program Join Date"
+                  name="loyaltyProgram.joinDate"
+                  type="date"
+                  value={formData.loyaltyProgram.joinDate}
                   onChange={handleFormChange}
                 />
               </div>
@@ -352,24 +429,30 @@ const Guests = () => {
         ) : (
           <>
             {/* Table Header */}
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm font-medium text-gray-700">
+<div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 text-sm font-medium text-gray-700">
                 <div>Name</div>
                 <div>Email</div>
                 <div>Phone</div>
                 <div>Location</div>
+                <div>Status</div>
                 <div>Actions</div>
               </div>
             </div>
 
             {/* Table Body */}
             <div className="divide-y divide-gray-200">
-              {filteredGuests.map((guest) => (
+{filteredGuests.map((guest) => (
                 <div key={guest.Id} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
                     <div>
                       <p className="font-medium text-gray-900">
                         {guest.firstName} {guest.lastName}
+                        {guest.vipStatus && (
+                          <span className="ml-2">
+                            <ApperIcon name="Star" size={16} className="inline text-yellow-500" />
+                          </span>
+                        )}
                       </p>
                       <p className="text-sm text-gray-600">ID: {guest.Id}</p>
                     </div>
@@ -389,6 +472,22 @@ const Guests = () => {
                           : "Not provided"
                         }
                       </p>
+                    </div>
+                    
+                    <div className="flex flex-col space-y-1">
+                      {guest.vipStatus && (
+                        <Badge variant="vip" size="sm">
+                          VIP Guest
+                        </Badge>
+                      )}
+                      {guest.loyaltyProgram?.tier && (
+                        <Badge 
+                          variant={guest.loyaltyProgram.tier.toLowerCase()} 
+                          size="sm"
+                        >
+                          {guest.loyaltyProgram.tier} ({guest.loyaltyProgram.points} pts)
+                        </Badge>
+                      )}
                     </div>
                     
                     <div className="flex items-center space-x-2">

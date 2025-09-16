@@ -2,7 +2,7 @@ import guestData from "@/services/mockData/guests.json";
 
 class GuestService {
   constructor() {
-    this.data = [...guestData];
+this.data = [...guestData];
     this.nextId = Math.max(...this.data.map(item => item.Id)) + 1;
   }
 
@@ -20,22 +20,38 @@ class GuestService {
 
   async create(guestData) {
     await this.delay();
-    const newGuest = {
+const newGuest = {
       Id: this.nextId++,
       ...guestData,
       createdAt: new Date().toISOString(),
-      stayHistory: []
+      stayHistory: [],
+      vipStatus: guestData.vipStatus || false,
+      loyaltyProgram: guestData.loyaltyProgram || {
+        tier: "",
+        points: 0,
+        joinDate: ""
+      }
     };
     this.data.push(newGuest);
     return { ...newGuest };
   }
 
-  async update(id, updateData) {
+async update(id, updateData) {
     await this.delay();
     const index = this.data.findIndex(item => item.Id === id);
     if (index === -1) throw new Error("Guest not found");
     
-    this.data[index] = { ...this.data[index], ...updateData };
+    // Ensure VIP status and loyalty program are properly handled
+    const updatedGuest = {
+      ...this.data[index],
+      ...updateData,
+      vipStatus: updateData.vipStatus !== undefined ? updateData.vipStatus : this.data[index].vipStatus,
+      loyaltyProgram: updateData.loyaltyProgram 
+        ? { ...this.data[index].loyaltyProgram, ...updateData.loyaltyProgram }
+        : this.data[index].loyaltyProgram
+    };
+    
+    this.data[index] = updatedGuest;
     return { ...this.data[index] };
   }
 
