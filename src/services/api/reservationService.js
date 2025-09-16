@@ -100,24 +100,43 @@ async update(id, updateData) {
     return changes;
   }
 
-  async cancelWithRefund(id, cancellationReason, refundAmount = 0) {
+async cancelWithRefund(id, cancellationReason, refundAmount = 0) {
     await this.delay();
     const index = this.data.findIndex(item => item.Id === id);
     if (index === -1) throw new Error("Reservation not found");
 
     const reservation = this.data[index];
+    
+    // Calculate refund amount based on cancellation policy if not provided
+    if (refundAmount === 0) {
+      const checkInDate = new Date(reservation.checkIn);
+      const now = new Date();
+      const daysUntilCheckIn = Math.ceil((checkInDate - now) / (1000 * 60 * 60 * 24));
+      
+      // Simple cancellation policy logic
+      if (daysUntilCheckIn >= 7) {
+        refundAmount = reservation.totalAmount; // Full refund
+      } else if (daysUntilCheckIn >= 3) {
+        refundAmount = reservation.totalAmount * 0.5; // 50% refund
+      } else {
+        refundAmount = 0; // No refund
+      }
+    }
+    
     const cancellation = {
       cancelledAt: new Date().toISOString(),
       reason: cancellationReason,
       refundAmount,
       refundProcessed: refundAmount > 0,
-      cancellationPolicy: reservation.cancellationPolicy
+      cancellationPolicy: reservation.cancellationPolicy || 'standard',
+      daysBeforeCheckIn: Math.ceil((new Date(reservation.checkIn) - new Date()) / (1000 * 60 * 60 * 24))
     };
 
     return this.update(id, {
       status: 'Cancelled',
       cancellation,
-      modificationReason: `Cancelled: ${cancellationReason}`
+      modificationReason: `Cancelled: ${cancellationReason}`,
+      refundAmount
     });
   }
 

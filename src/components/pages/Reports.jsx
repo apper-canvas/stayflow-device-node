@@ -25,7 +25,7 @@ const Reports = () => {
     loadReportData();
   }, [dateRange]);
 
-  const loadReportData = async () => {
+const loadReportData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -52,6 +52,19 @@ const Reports = () => {
       setLoading(false);
     }
   };
+  
+  const loadTaxReport = async () => {
+    try {
+      const startDate = getDateRangeFilter();
+      const endDate = new Date();
+      
+      const taxReport = await billingService.getTaxReport(startDate, endDate);
+      return taxReport;
+    } catch (error) {
+      console.error('Failed to load tax report:', error);
+      return null;
+    }
+  };
 
   const getDateRangeFilter = () => {
     const now = new Date();
@@ -69,7 +82,7 @@ const Reports = () => {
     }
   };
 
-  const calculateStats = (reservations, rooms, bills) => {
+const calculateStats = (reservations, rooms, bills) => {
     const startDate = getDateRangeFilter();
     const filteredReservations = reservations.filter(r => 
       new Date(r.checkIn) >= startDate
@@ -78,9 +91,12 @@ const Reports = () => {
       new Date(b.createdAt) >= startDate
     );
 
-    const totalRevenue = filteredBills
-      .filter(b => b.paymentStatus === "Paid")
-      .reduce((sum, b) => sum + b.totalAmount, 0);
+    const paidBills = filteredBills.filter(b => b.paymentStatus === "Paid");
+    const totalRevenue = paidBills.reduce((sum, b) => sum + (b.subtotal || b.totalAmount || 0), 0);
+    const totalTaxCollected = paidBills.reduce((sum, b) => sum + (b.taxAmount || 0), 0);
+    const totalRefunds = filteredBills.reduce((sum, b) => 
+      sum + ((b.refunds || []).reduce((refundSum, r) => refundSum + r.amount, 0)), 0
+    );
 
     const occupiedRooms = rooms.filter(r => r.status === "Occupied").length;
     const occupancyRate = rooms.length > 0 ? Math.round((occupiedRooms / rooms.length) * 100) : 0;
@@ -95,11 +111,17 @@ const Reports = () => {
 
     return {
       totalRevenue,
+      totalTaxCollected,
+      totalRefunds,
+      netRevenue: totalRevenue - totalRefunds,
       occupancyRate,
       averageDailyRate,
       totalBookings,
       cancellationRate,
-      outstandingPayments: bills.filter(b => b.paymentStatus === "Pending").length
+      outstandingPayments: bills.filter(b => b.paymentStatus === "Pending").length,
+      partialPayments: bills.filter(b => b.paymentStatus === "Partial").length,
+      averageTaxRate: paidBills.length > 0 ? 
+        paidBills.reduce((sum, b) => sum + (b.taxRate || 0), 0) / paidBills.length : 0
     };
   };
 
@@ -226,15 +248,24 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+{/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard
-          title="Total Revenue"
-          value={`$${stats.totalRevenue.toLocaleString()}`}
+          title="Net Revenue"
+          value={`$${stats.netRevenue.toLocaleString()}`}
           icon="DollarSign"
           color="success"
           trend="up"
-          trendValue={`${dateRange === "7days" ? "7" : dateRange === "30days" ? "30" : dateRange === "90days" ? "90" : "This"} ${dateRange === "thismonth" ? "month" : "days"}`}
+          trendValue={`After refunds: $${stats.totalRefunds.toLocaleString()}`}
+        />
+        
+        <StatCard
+          title="Tax Collected"
+          value={`$${stats.totalTaxCollected.toLocaleString()}`}
+          icon="Receipt"
+          color="info"
+          trend="up"
+          trendValue={`Avg rate: ${stats.averageTaxRate.toFixed(1)}%`}
         />
         
         <StatCard
@@ -254,10 +285,19 @@ const Reports = () => {
         />
         
         <StatCard
+          title="Outstanding"
+          value={stats.outstandingPayments}
+          icon="Clock"
+          color="warning"
+          trend="down"
+          trendValue={`${stats.partialPayments} partial`}
+        />
+        
+        <StatCard
           title="Total Bookings"
           value={stats.totalBookings}
           icon="Calendar"
-          color="warning"
+          color="secondary"
         />
       </div>
 
@@ -384,12 +424,12 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Summary Table */}
+{/* Financial Summary Table */}
       <div className="bg-white rounded-lg shadow-card overflow-hidden">
         <div className="p-6 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center">
             <ApperIcon name="FileText" size={20} className="mr-2 text-primary-500" />
-            Performance Summary
+            Financial Performance Summary
           </h3>
         </div>
         
@@ -398,7 +438,7 @@ const Reports = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Metric
+                  Financial Metric
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Current Period
@@ -407,46 +447,86 @@ const Reports = () => {
                   Target
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  Performance
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  Revenue
+                  Gross Revenue
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   ${stats.totalRevenue.toLocaleString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ${Math.round(stats.totalRevenue * 1.2).toLocaleString()}
+                  ${Math.round(stats.totalRevenue * 1.15).toLocaleString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                    In Progress
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    On Track
                   </span>
                 </td>
               </tr>
               <tr>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  Occupancy Rate
+                  Tax Collected
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {stats.occupancyRate}%
+                  ${stats.totalTaxCollected.toLocaleString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  85%
+                  ${Math.round(stats.totalRevenue * 0.10).toLocaleString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    Compliant
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  Net Revenue
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  ${stats.netRevenue.toLocaleString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  ${Math.round(stats.netRevenue * 1.1).toLocaleString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    stats.occupancyRate >= 85 
+                    stats.netRevenue >= stats.totalRevenue * 0.95 
                       ? "bg-green-100 text-green-800" 
-                      : stats.occupancyRate >= 70 
+                      : stats.netRevenue >= stats.totalRevenue * 0.85 
                       ? "bg-yellow-100 text-yellow-800"
                       : "bg-red-100 text-red-800"
                   }`}>
-                    {stats.occupancyRate >= 85 ? "Excellent" : stats.occupancyRate >= 70 ? "Good" : "Needs Improvement"}
+                    {stats.netRevenue >= stats.totalRevenue * 0.95 ? "Excellent" : 
+                     stats.netRevenue >= stats.totalRevenue * 0.85 ? "Good" : "Review Required"}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  Outstanding Payments
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {stats.outstandingPayments} invoices
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  &lt; 5 invoices
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    stats.outstandingPayments <= 5 
+                      ? "bg-green-100 text-green-800" 
+                      : stats.outstandingPayments <= 10 
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-red-100 text-red-800"
+                  }`}>
+                    {stats.outstandingPayments <= 5 ? "Good" : 
+                     stats.outstandingPayments <= 10 ? "Monitor" : "Action Required"}
                   </span>
                 </td>
               </tr>

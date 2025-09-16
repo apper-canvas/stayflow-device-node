@@ -189,17 +189,33 @@ const newErrors = {};
     return Object.keys(newErrors).length === 0;
   };
 
-  const calculateTotal = () => {
+const calculateTotal = () => {
     if (formData.roomId && formData.checkIn && formData.checkOut) {
       const room = rooms.find(r => r.Id === parseInt(formData.roomId));
       if (room) {
         const checkIn = new Date(formData.checkIn);
         const checkOut = new Date(formData.checkOut);
         const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-        return nights * room.rate;
+        const subtotal = nights * room.rate;
+        
+        // Add basic tax calculation (10% default rate)
+        const taxRate = 0.10;
+        const taxAmount = subtotal * taxRate;
+        
+        return {
+          subtotal,
+          taxAmount,
+          total: subtotal + taxAmount,
+          nights
+        };
       }
     }
-    return 0;
+    return {
+      subtotal: 0,
+      taxAmount: 0,
+      total: 0,
+      nights: 0
+    };
   };
 
 const handleSubmit = async (e) => {
@@ -239,7 +255,7 @@ const handleSubmit = async (e) => {
               guestName: `${room.guestFirstName} ${room.guestLastName}`,
               roomNumber: rooms.find(r => r.Id === parseInt(room.roomId))?.number || "",
               specialRequests: room.specialRequests || "",
-              totalAmount: calculateRoomTotal(room.roomId)
+totalAmount: calculateRoomTotal(room.roomId).total || calculateRoomTotal(room.roomId)
             };
           })),
           specialRequests: formData.groupNotes || "",
@@ -303,7 +319,7 @@ const handleSubmit = async (e) => {
           checkIn: new Date(formData.checkIn).toISOString(),
           checkOut: new Date(formData.checkOut).toISOString(),
           status: "Confirmed",
-          totalAmount: calculateTotal(),
+totalAmount: calculateTotal().total || calculateTotal(),
           specialRequests: formData.specialRequests || "",
           corporateAccount
         };
@@ -353,7 +369,7 @@ const handleSubmit = async (e) => {
           checkIn: new Date(formData.checkIn).toISOString(),
           checkOut: new Date(formData.checkOut).toISOString(),
           status: reservation ? reservation.status : "Confirmed",
-          totalAmount: calculateTotal(),
+totalAmount: calculateTotal().total || calculateTotal(),
           specialRequests: formData.specialRequests || ""
         };
         
@@ -379,17 +395,33 @@ const handleSubmit = async (e) => {
     }
   };
 
-  const calculateRoomTotal = (roomId) => {
+const calculateRoomTotal = (roomId) => {
     if (roomId && formData.checkIn && formData.checkOut) {
       const room = rooms.find(r => r.Id === parseInt(roomId));
       if (room) {
         const checkIn = new Date(formData.checkIn);
         const checkOut = new Date(formData.checkOut);
         const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
-        return nights * room.rate;
+        const subtotal = nights * room.rate;
+        
+        // Add basic tax calculation (10% default rate)
+        const taxRate = 0.10;
+        const taxAmount = subtotal * taxRate;
+        
+        return {
+          subtotal,
+          taxAmount,
+          total: subtotal + taxAmount,
+          nights
+        };
       }
     }
-    return 0;
+    return {
+      subtotal: 0,
+      taxAmount: 0,
+      total: 0,
+      nights: 0
+    };
   };
 
   const totalAmount = calculateTotal();
