@@ -1,0 +1,106 @@
+[
+  {
+    "Id": 1,
+    "firstName": "Sarah",
+    "lastName": "Johnson",
+    "email": "sarah.johnson@email.com",
+    "phone": "(555) 123-4567",
+    "address": {
+      "street": "123 Main St",
+      "city": "New York",
+      "state": "NY",
+      "zipCode": "10001"
+    },
+    "preferences": ["Non-smoking", "High floor", "City view"],
+    "stayHistory": [
+      {
+        "reservationId": 1,
+        "checkIn": "2024-01-15T15:00:00Z",
+        "checkOut": "2024-01-18T11:00:00Z",
+        "roomNumber": "301",
+        "rating": 5
+      }
+    ],
+    "createdAt": "2024-01-10T10:00:00Z"
+  },
+  {
+    "Id": 2,
+    "firstName": "Michael",
+    "lastName": "Brown",
+    "email": "michael.brown@email.com",
+    "phone": "(555) 234-5678",
+    "address": {
+      "street": "456 Oak Ave",
+      "city": "Los Angeles",
+      "state": "CA",
+      "zipCode": "90210"
+    },
+    "preferences": ["Smoking allowed", "Pool access", "Late check-out"],
+    "stayHistory": [
+      {
+        "reservationId": 2,
+        "checkIn": "2024-01-20T15:00:00Z",
+        "checkOut": "2024-01-22T11:00:00Z",
+        "roomNumber": "205",
+        "rating": 4
+      }
+    ],
+    "createdAt": "2024-01-18T14:30:00Z"
+  },
+  {
+    "Id": 3,
+    "firstName": "Emily",
+    "lastName": "Davis",
+    "email": "emily.davis@email.com",
+    "phone": "(555) 345-6789",
+    "address": {
+      "street": "789 Pine St",
+      "city": "Chicago",
+      "state": "IL",
+      "zipCode": "60601"
+    },
+    "preferences": ["Quiet room", "Ground floor", "Extra towels"],
+    "stayHistory": [],
+    "createdAt": "2024-01-25T09:15:00Z"
+  },
+  {
+    "Id": 4,
+    "firstName": "David",
+    "lastName": "Wilson",
+    "email": "david.wilson@email.com",
+    "phone": "(555) 456-7890",
+    "address": {
+      "street": "321 Elm St",
+      "city": "Houston",
+      "state": "TX",
+      "zipCode": "77001"
+    },
+    "preferences": ["Business amenities", "WiFi", "Room service"],
+    "stayHistory": [
+      {
+        "reservationId": 3,
+        "checkIn": "2024-02-01T15:00:00Z",
+        "checkOut": "2024-02-05T11:00:00Z",
+        "roomNumber": "401",
+        "rating": 5
+      }
+    ],
+    "createdAt": "2024-01-28T16:45:00Z"
+  },
+  {
+    "Id": 5,
+    "firstName": "Jessica",
+    "lastName": "Martinez",
+    "email": "jessica.martinez@email.com",
+    "phone": "(555) 567-8901",
+    "address": {
+      "street": "654 Maple Dr",
+      "city": "Phoenix",
+      "state": "AZ",
+      "zipCode": "85001"
+    },
+    "preferences": ["Spa access", "Ocean view", "Mini bar"],
+    "stayHistory": [],
+    "createdAt": "2024-02-05T11:20:00Z"
+  }
+]
