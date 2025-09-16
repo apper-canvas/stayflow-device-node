@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Chart from "react-apexcharts";
+import { format, startOfMonth, subDays } from "date-fns";
+import reservationService from "@/services/api/reservationService";
+import roomService from "@/services/api/roomService";
+import billingService from "@/services/api/billingService";
 import ApperIcon from "@/components/ApperIcon";
 import StatCard from "@/components/molecules/StatCard";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
-import reservationService from "@/services/api/reservationService";
-import roomService from "@/services/api/roomService";
-import billingService from "@/services/api/billingService";
-import { format, subDays, startOfMonth } from "date-fns";
 
 // Header Component
 const ReportsHeader = React.memo(({ dateRange, onDateRangeChange }) => (
@@ -389,12 +389,106 @@ const useReportsData = (dateRange) => {
       averageDailyRate,
       totalBookings,
       cancellationRate,
-      outstandingPayments: bills.filter(b => b.paymentStatus === "Pending").length,
+outstandingPayments: bills.filter(b => b.paymentStatus === "Pending").length,
       partialPayments: bills.filter(b => b.paymentStatus === "Partial").length,
       averageTaxRate: paidBills.length > 0 ? 
-        paidBills.reduce((sum, b) => sum + (b.taxRate || 0), 0) / paidBills.length : 0
+        (totalTaxCollected / totalRevenue) * 100 : 0
     };
   }, [getDateRangeFilter]);
+
+  const generateChartData = useCallback((reservations, bills, rooms, startDate) => {
+    const filteredBills = bills.filter(b => 
+      new Date(b.createdAt) >= startDate && b.paymentStatus === "Paid"
+    );
+
+    // Revenue Chart Data
+    const revenueByDay = {};
+    filteredBills.forEach(bill => {
+      const day = format(new Date(bill.createdAt), "MMM dd");
+      revenueByDay[day] = (revenueByDay[day] || 0) + (bill.totalAmount || 0);
+    });
+
+    const revenueChart = {
+      series: [{
+        name: "Revenue",
+        data: Object.values(revenueByDay)
+      }],
+      options: {
+        chart: { type: "line", toolbar: { show: false } },
+        colors: ["#1e40af"],
+        stroke: { curve: "smooth", width: 3 },
+        xaxis: { categories: Object.keys(revenueByDay) },
+        yaxis: { 
+          labels: { 
+            formatter: (value) => `$${value.toFixed(0)}` 
+          } 
+        },
+        tooltip: {
+          y: { formatter: (value) => `$${value.toFixed(2)}` }
+        }
+      }
+    };
+
+    // Room Status Chart Data
+    const roomStatusCounts = {
+      Available: rooms.filter(r => r.status === "Available").length,
+      Occupied: rooms.filter(r => r.status === "Occupied").length,
+      Cleaning: rooms.filter(r => r.status === "Cleaning").length,
+      Maintenance: rooms.filter(r => r.status === "Maintenance").length
+    };
+
+    const roomStatusChart = {
+      series: Object.values(roomStatusCounts),
+      options: {
+        chart: { type: "donut" },
+        colors: ["#059669", "#dc2626", "#d97706", "#0284c7"],
+        labels: Object.keys(roomStatusCounts),
+        legend: { position: "bottom" },
+        dataLabels: {
+          formatter: (val) => `${Math.round(val)}%`
+        }
+      }
+    };
+
+    // Occupancy Trend Chart
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = subDays(new Date(), 6 - i);
+      const dayReservations = reservations.filter(r => {
+        const checkIn = new Date(r.checkIn);
+        const checkOut = new Date(r.checkOut);
+        return checkIn <= date && checkOut > date && r.status !== "Cancelled";
+      });
+      return {
+        day: format(date, "MMM dd"),
+        occupancy: rooms.length > 0 ? Math.round((dayReservations.length / rooms.length) * 100) : 0
+      };
+    });
+
+    const occupancyChart = {
+      series: [{
+        name: "Occupancy Rate",
+        data: last7Days.map(d => d.occupancy)
+      }],
+      options: {
+        chart: { type: "bar", toolbar: { show: false } },
+        colors: ["#0ea5e9"],
+        xaxis: { categories: last7Days.map(d => d.day) },
+        yaxis: { 
+          max: 100,
+          labels: { formatter: (value) => `${value}%` }
+        },
+        tooltip: {
+          y: { formatter: (value) => `${value}%` }
+        }
+      }
+    };
+
+    return {
+      revenue: revenueChart,
+      roomStatus: roomStatusChart,
+      occupancy: occupancyChart
+    };
+  }, []);
 
   const loadReportData = useCallback(async () => {
     try {
@@ -418,215 +512,18 @@ const useReportsData = (dateRange) => {
         charts
       });
     } catch (err) {
-      setError(err.message);
+      console.error('Failed to load reports data:', err);
+      setError(err.message || 'Failed to load reports data');
     } finally {
       setLoading(false);
     }
-  }, [calculateStats, getDateRangeFilter]);
+  }, [calculateStats, generateChartData, getDateRangeFilter]);
 
   useEffect(() => {
     loadReportData();
   }, [loadReportData]);
 
   return { data, loading, error, loadReportData };
-};
-
-// Custom hook for chart data generation
-const useReportsCharts = () => {
-  return useMemo(() => {
-    const generateChartData = (reservations, bills, rooms, getDateRangeFilter) => {
-      const startDate = getDateRangeFilter();
-      const filteredBills = bills.filter(b => 
-        new Date(b.createdAt) >= startDate && b.paymentStatus === "Paid"
-      );
-
-      // Revenue Chart Data
-      const revenueByDay = {};
-      filteredBills.forEach(bill => {
-        const day = format(new Date(bill.createdAt), "MMM dd");
-        revenueByDay[day] = (revenueByDay[day] || 0) + bill.totalAmount;
-      });
-
-      const revenueChart = {
-        series: [{
-          name: "Revenue",
-          data: Object.values(revenueByDay)
-        }],
-        options: {
-          chart: { type: "line", toolbar: { show: false } },
-          colors: ["#1e40af"],
-          stroke: { curve: "smooth", width: 3 },
-          xaxis: { categories: Object.keys(revenueByDay) },
-          yaxis: { 
-            labels: { 
-              formatter: (value) => `$${value.toFixed(0)}` 
-            } 
-          },
-          tooltip: {
-            y: { formatter: (value) => `$${value.toFixed(2)}` }
-          }
-        }
-      };
-
-      // Room Status Chart Data
-      const roomStatusCounts = {
-        Available: rooms.filter(r => r.status === "Available").length,
-        Occupied: rooms.filter(r => r.status === "Occupied").length,
-        Cleaning: rooms.filter(r => r.status === "Cleaning").length,
-        Maintenance: rooms.filter(r => r.status === "Maintenance").length
-      };
-
-      const roomStatusChart = {
-        series: Object.values(roomStatusCounts),
-        options: {
-          chart: { type: "donut" },
-          colors: ["#059669", "#dc2626", "#d97706", "#0284c7"],
-          labels: Object.keys(roomStatusCounts),
-          legend: { position: "bottom" },
-          dataLabels: {
-            formatter: (val) => `${Math.round(val)}%`
-          }
-        }
-      };
-
-      // Occupancy Trend Chart
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const date = subDays(new Date(), 6 - i);
-        const dayReservations = reservations.filter(r => {
-          const checkIn = new Date(r.checkIn);
-          const checkOut = new Date(r.checkOut);
-          return checkIn <= date && checkOut > date && r.status !== "Cancelled";
-        });
-        return {
-          day: format(date, "MMM dd"),
-          occupancy: Math.round((dayReservations.length / rooms.length) * 100)
-        };
-      });
-
-      const occupancyChart = {
-        series: [{
-          name: "Occupancy Rate",
-          data: last7Days.map(d => d.occupancy)
-        }],
-        options: {
-          chart: { type: "bar", toolbar: { show: false } },
-          colors: ["#0ea5e9"],
-          xaxis: { categories: last7Days.map(d => d.day) },
-          yaxis: { 
-            max: 100,
-            labels: { formatter: (value) => `${value}%` }
-          },
-          tooltip: {
-            y: { formatter: (value) => `${value}%` }
-          }
-        }
-      };
-
-      return {
-        revenue: revenueChart,
-        roomStatus: roomStatusChart,
-        occupancy: occupancyChart
-      };
-    };
-
-    return generateChartData;
-  }, []);
-};
-
-// Global chart data generation function
-const generateChartData = (reservations, bills, rooms, getDateRangeFilter) => {
-  const startDate = getDateRangeFilter();
-  const filteredBills = bills.filter(b => 
-    new Date(b.createdAt) >= startDate && b.paymentStatus === "Paid"
-  );
-
-  // Revenue Chart Data
-  const revenueByDay = {};
-  filteredBills.forEach(bill => {
-    const day = format(new Date(bill.createdAt), "MMM dd");
-    revenueByDay[day] = (revenueByDay[day] || 0) + bill.totalAmount;
-  });
-
-  const revenueChart = {
-    series: [{
-      name: "Revenue",
-      data: Object.values(revenueByDay)
-    }],
-    options: {
-      chart: { type: "line", toolbar: { show: false } },
-      colors: ["#1e40af"],
-      stroke: { curve: "smooth", width: 3 },
-      xaxis: { categories: Object.keys(revenueByDay) },
-      yaxis: { 
-        labels: { 
-          formatter: (value) => `$${value.toFixed(0)}` 
-        } 
-      },
-      tooltip: {
-        y: { formatter: (value) => `$${value.toFixed(2)}` }
-      }
-    }
-  };
-
-  // Room Status Chart Data
-  const roomStatusCounts = {
-    Available: rooms.filter(r => r.status === "Available").length,
-    Occupied: rooms.filter(r => r.status === "Occupied").length,
-    Cleaning: rooms.filter(r => r.status === "Cleaning").length,
-    Maintenance: rooms.filter(r => r.status === "Maintenance").length
-  };
-
-  const roomStatusChart = {
-    series: Object.values(roomStatusCounts),
-    options: {
-      chart: { type: "donut" },
-      colors: ["#059669", "#dc2626", "#d97706", "#0284c7"],
-      labels: Object.keys(roomStatusCounts),
-      legend: { position: "bottom" },
-      dataLabels: {
-        formatter: (val) => `${Math.round(val)}%`
-      }
-    }
-  };
-
-  // Occupancy Trend Chart
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const date = subDays(new Date(), 6 - i);
-    const dayReservations = reservations.filter(r => {
-      const checkIn = new Date(r.checkIn);
-      const checkOut = new Date(r.checkOut);
-      return checkIn <= date && checkOut > date && r.status !== "Cancelled";
-    });
-    return {
-      day: format(date, "MMM dd"),
-      occupancy: Math.round((dayReservations.length / rooms.length) * 100)
-    };
-  });
-
-  const occupancyChart = {
-    series: [{
-      name: "Occupancy Rate",
-      data: last7Days.map(d => d.occupancy)
-    }],
-    options: {
-      chart: { type: "bar", toolbar: { show: false } },
-      colors: ["#0ea5e9"],
-      xaxis: { categories: last7Days.map(d => d.day) },
-      yaxis: { 
-        max: 100,
-        labels: { formatter: (value) => `${value}%` }
-      },
-      tooltip: {
-        y: { formatter: (value) => `${value}%` }
-      }
-    }
-  };
-
-  return {
-    revenue: revenueChart,
-    roomStatus: roomStatusChart,
-    occupancy: occupancyChart
-  };
 };
 
 // Main Reports Component
