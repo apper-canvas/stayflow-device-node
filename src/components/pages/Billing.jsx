@@ -132,10 +132,10 @@ const resetForm = () => {
     });
   };
 
-  const handleCreateBill = () => {
+const handleCreateBill = () => {
     resetForm();
     setSelectedBill(null);
-    setShowForm(true);
+    setActiveView("create");
   };
 
 const handleProcessPayment = (bill) => {
