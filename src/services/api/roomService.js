@@ -2,8 +2,9 @@ import roomData from "@/services/mockData/rooms.json";
 
 class RoomService {
   constructor() {
-    this.data = [...roomData];
+this.data = [...roomData];
     this.nextId = Math.max(...this.data.map(item => item.Id)) + 1;
+    this.validStatuses = ["Available", "Occupied", "Cleaning", "Dirty", "Maintenance", "Out of Order"];
   }
 
   async getAll() {
@@ -20,9 +21,10 @@ class RoomService {
 
   async create(roomData) {
     await this.delay();
-    const newRoom = {
+const newRoom = {
       Id: this.nextId++,
       ...roomData,
+      status: this.validStatuses.includes(roomData.status) ? roomData.status : "Available",
       lastCleaned: new Date().toISOString()
     };
     this.data.push(newRoom);
@@ -34,7 +36,13 @@ class RoomService {
     const index = this.data.findIndex(item => item.Id === id);
     if (index === -1) throw new Error("Room not found");
     
-    this.data[index] = { ...this.data[index], ...updateData };
+this.data[index] = { 
+      ...this.data[index], 
+      ...updateData,
+      status: updateData.status && this.validStatuses.includes(updateData.status) 
+        ? updateData.status 
+        : this.data[index].status
+    };
     return { ...this.data[index] };
   }
 

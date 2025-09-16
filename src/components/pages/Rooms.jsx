@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import roomService from "@/services/api/roomService";
 import ApperIcon from "@/components/ApperIcon";
-import Button from "@/components/atoms/Button";
 import RoomCard from "@/components/molecules/RoomCard";
 import FormField from "@/components/molecules/FormField";
+import Button from "@/components/atoms/Button";
+import Select from "@/components/atoms/Select";
+import Empty from "@/components/ui/Empty";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
-import Empty from "@/components/ui/Empty";
-import roomService from "@/services/api/roomService";
 
 const Rooms = () => {
-  const [rooms, setRooms] = useState([]);
+const [rooms, setRooms] = useState([]);
   const [filteredRooms, setFilteredRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,9 +31,8 @@ const Rooms = () => {
   });
   const [formErrors, setFormErrors] = useState({});
 
-  const roomTypes = ["Standard", "Deluxe", "Suite", "Executive Suite", "Presidential Suite"];
-  const roomStatuses = ["Available", "Occupied", "Cleaning", "Maintenance"];
-
+const roomTypes = ["Standard", "Deluxe", "Suite", "Executive Suite", "Presidential Suite"];
+  const roomStatuses = ["Available", "Occupied", "Cleaning", "Dirty", "Maintenance", "Out of Order"];
   useEffect(() => {
     loadRooms();
   }, []);
@@ -112,15 +112,21 @@ const Rooms = () => {
     setShowStatusModal(true);
   };
 
-  const handleUpdateRoomStatus = async (newStatus) => {
+const handleUpdateRoomStatus = async (newStatus) => {
     if (!roomToUpdate) return;
 
     try {
-      await roomService.update(roomToUpdate.Id, {
+      const updateData = {
         ...roomToUpdate,
-        status: newStatus,
-        lastCleaned: newStatus === "Available" ? new Date().toISOString() : roomToUpdate.lastCleaned
-      });
+        status: newStatus
+      };
+
+      // Update lastCleaned timestamp for cleaning completion
+      if (newStatus === "Available" && roomToUpdate.status === "Cleaning") {
+        updateData.lastCleaned = new Date().toISOString();
+      }
+
+      await roomService.update(roomToUpdate.Id, updateData);
       
       toast.success(`Room ${roomToUpdate.number} status updated to ${newStatus}!`);
       setShowStatusModal(false);
@@ -243,7 +249,7 @@ const Rooms = () => {
                   ))}
                 </FormField>
 
-                <FormField
+<FormField
                   label="Status"
                   type="select"
                   name="status"
@@ -340,7 +346,7 @@ const Rooms = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
-              <option value="all">All Status</option>
+<option value="all">All Status</option>
               {roomStatuses.map(status => (
                 <option key={status} value={status}>{status}</option>
               ))}
@@ -392,9 +398,9 @@ const Rooms = () => {
       </div>
 
       {/* Status Update Modal */}
-      {showStatusModal && roomToUpdate && (
+{showStatusModal && roomToUpdate && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 Update Room {roomToUpdate.number} Status
@@ -418,7 +424,7 @@ const Rooms = () => {
                   variant={roomToUpdate.status === status ? "primary" : "outline"}
                   onClick={() => handleUpdateRoomStatus(status)}
                   disabled={roomToUpdate.status === status}
-                  className="justify-center"
+                  className="justify-center text-sm"
                 >
                   {status}
                 </Button>

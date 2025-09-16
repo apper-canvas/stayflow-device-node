@@ -10,21 +10,25 @@ const RoomCard = ({
   className = "" 
 }) => {
   const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
+switch (status?.toLowerCase()) {
       case "available":
         return "available";
       case "occupied":
         return "occupied";
       case "cleaning":
         return "cleaning";
+      case "dirty":
+        return "dirty";
       case "maintenance":
         return "maintenance";
+      case "out of order":
+        return "outoforder";
       default:
         return "default";
     }
   };
 
-  const getStatusIcon = (status) => {
+const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
       case "available":
         return "CheckCircle";
@@ -32,8 +36,12 @@ const RoomCard = ({
         return "User";
       case "cleaning":
         return "Sparkles";
+      case "dirty":
+        return "AlertTriangle";
       case "maintenance":
         return "Wrench";
+      case "out of order":
+        return "XCircle";
       default:
         return "Circle";
     }
@@ -50,8 +58,22 @@ const formatLastCleaned = (dateString) => {
     return `${diffDays}d ago`;
   };
 
+  const getStatusPriority = (status) => {
+    switch (status?.toLowerCase()) {
+      case "out of order": return "high";
+      case "dirty": return "medium";
+      case "maintenance": return "medium";
+      case "cleaning": return "low";
+      default: return "normal";
+    }
+  };
+
+const priorityColor = getStatusPriority(room.status);
+  const borderClass = priorityColor === "high" ? "border-l-4 border-l-red-500" : 
+                     priorityColor === "medium" ? "border-l-4 border-l-yellow-500" : "";
+
   return (
-    <div className={`bg-white rounded-lg shadow-card p-4 card-hover ${className}`}>
+    <div className={`bg-white rounded-lg shadow-card p-4 card-hover ${borderClass} ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
           <h3 className="font-semibold text-gray-900">Room {room.number}</h3>
@@ -76,6 +98,11 @@ const formatLastCleaned = (dateString) => {
           <p className="text-sm text-gray-600">
             <span className="font-medium">Amenities:</span> {room.amenities.slice(0, 2).join(", ")}
             {room.amenities.length > 2 && ` +${room.amenities.length - 2} more`}
+          </p>
+        )}
+        {room.notes && (
+          <p className="text-xs text-gray-500 italic">
+            <span className="font-medium">Notes:</span> {room.notes}
           </p>
         )}
       </div>

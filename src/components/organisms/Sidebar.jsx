@@ -12,8 +12,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: "Rooms", href: "/rooms", icon: "BedDouble" },
     { name: "Billing", href: "/billing", icon: "CreditCard" },
     { name: "Reports", href: "/reports", icon: "BarChart3" }
-  ];
-
+];
   const NavItem = ({ item, mobile = false }) => (
     <NavLink
       to={item.href}

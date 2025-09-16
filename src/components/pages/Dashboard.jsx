@@ -14,7 +14,7 @@ import { format } from "date-fns";
 const Dashboard = () => {
   const [data, setData] = useState({
     reservations: [],
-    rooms: [],
+rooms: [],
     guests: [],
     todayReservations: [],
     stats: null
@@ -43,9 +43,11 @@ const Dashboard = () => {
         return checkInDate === today;
       });
 
-      // Calculate occupancy rate
+// Calculate occupancy rate and room statistics
       const occupiedRooms = rooms.filter(room => room.status === "Occupied").length;
       const occupancyRate = rooms.length > 0 ? Math.round((occupiedRooms / rooms.length) * 100) : 0;
+      const outOfOrderRooms = rooms.filter(room => room.status === "Out of Order").length;
+      const dirtyRooms = rooms.filter(room => room.status === "Dirty").length;
 
       // Calculate revenue for current month
       const currentMonth = new Date().getMonth();
@@ -89,7 +91,7 @@ const Dashboard = () => {
         status: "Checked In"
       });
       
-      // Update room status
+// Update room status to occupied
       await roomService.update(reservation.roomId, {
         status: "Occupied"
       });
@@ -216,30 +218,38 @@ const Dashboard = () => {
             </h2>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-2 gap-4 mb-6">
+<div className="grid grid-cols-3 gap-3 mb-6">
               {[
-                { status: "Available", count: rooms.filter(r => r.status === "Available").length, color: "success" },
-                { status: "Occupied", count: rooms.filter(r => r.status === "Occupied").length, color: "error" },
-                { status: "Cleaning", count: rooms.filter(r => r.status === "Cleaning").length, color: "warning" },
-                { status: "Maintenance", count: rooms.filter(r => r.status === "Maintenance").length, color: "info" }
+                { status: "Available", count: rooms.filter(r => r.status === "Available").length, color: "available" },
+                { status: "Occupied", count: rooms.filter(r => r.status === "Occupied").length, color: "occupied" },
+                { status: "Cleaning", count: rooms.filter(r => r.status === "Cleaning").length, color: "cleaning" },
+                { status: "Dirty", count: rooms.filter(r => r.status === "Dirty").length, color: "dirty" },
+                { status: "Maintenance", count: rooms.filter(r => r.status === "Maintenance").length, color: "maintenance" },
+                { status: "Out of Order", count: rooms.filter(r => r.status === "Out of Order").length, color: "outoforder" }
               ].map((item) => (
-                <div key={item.status} className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 mb-1">{item.count}</p>
-                  <Badge variant={item.status.toLowerCase()}>{item.status}</Badge>
+                <div key={item.status} className="text-center p-2 bg-gray-50 rounded-lg">
+                  <p className="text-lg font-bold text-gray-900 mb-1">{item.count}</p>
+                  <Badge variant={item.color} size="sm">{item.status}</Badge>
                 </div>
               ))}
             </div>
             
             <div className="space-y-2">
-              {rooms.slice(0, 6).map((room) => (
+              {rooms
+                .filter(room => ["Dirty", "Out of Order", "Maintenance"].includes(room.status))
+                .slice(0, 4)
+                .map((room) => (
                 <div key={room.Id} className="flex items-center justify-between py-2">
                   <div className="flex items-center">
                     <span className="font-medium text-gray-900 mr-3">Room {room.number}</span>
                     <span className="text-sm text-gray-600">{room.type}</span>
                   </div>
-                  <Badge variant={room.status.toLowerCase()}>{room.status}</Badge>
+                  <Badge variant={room.status.toLowerCase().replace(' ', '')}>{room.status}</Badge>
                 </div>
               ))}
+              {rooms.filter(room => ["Dirty", "Out of Order", "Maintenance"].includes(room.status)).length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-4">All rooms in good condition</p>
+              )}
             </div>
           </div>
         </div>
@@ -272,7 +282,7 @@ const Dashboard = () => {
           <Button 
             variant="outline" 
             className="h-16 flex-col justify-center"
-            onClick={() => window.location.href = "/rooms"}
+onClick={() => window.location.href = "/rooms"}
           >
             <ApperIcon name="Settings" size={20} className="mb-1" />
             Manage Rooms

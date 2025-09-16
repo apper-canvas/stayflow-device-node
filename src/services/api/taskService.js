@@ -1,18 +1,18 @@
 import taskData from '@/services/mockData/tasks.json';
 
 class TaskService {
-  constructor() {
+constructor() {
     this.data = [...taskData];
+    this.nextId = Math.max(...this.data.map(item => item.Id || 0)) + 1;
   }
 
-  delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
+delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
-  async getAll() {
+async getAll() {
     await this.delay();
     return [...this.data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
-
-  async getById(id) {
+async getById(id) {
     await this.delay();
     const task = this.data.find(task => task.Id === parseInt(id));
     if (!task) {
@@ -20,13 +20,12 @@ class TaskService {
     }
     return { ...task };
   }
-
-  async create(taskData) {
+async create(taskData) {
     await this.delay();
     const newTask = {
       ...taskData,
-      Id: Math.max(...this.data.map(t => t.Id), 0) + 1,
-      roomId: parseInt(taskData.roomId) || null,
+      Id: this.nextId++,
+      roomId: taskData.roomId ? parseInt(taskData.roomId) : null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -34,7 +33,7 @@ class TaskService {
     return { ...newTask };
   }
 
-  async update(id, updateData) {
+async update(id, updateData) {
     await this.delay();
     const index = this.data.findIndex(task => task.Id === parseInt(id));
     if (index === -1) {
@@ -50,7 +49,7 @@ class TaskService {
     return { ...this.data[index] };
   }
 
-  async delete(id) {
+async delete(id) {
     await this.delay();
     const index = this.data.findIndex(task => task.Id === parseInt(id));
     if (index === -1) {
@@ -60,20 +59,34 @@ class TaskService {
     return true;
   }
 
-  async getByRoom(roomId) {
+async getByRoom(roomId) {
     await this.delay();
     return this.data.filter(task => task.roomId === parseInt(roomId));
   }
 
-  async getByStatus(status) {
+async getByStatus(status) {
     await this.delay();
     return this.data.filter(task => task.status.toLowerCase() === status.toLowerCase());
   }
 
-  async getByAssignee(assignedTo) {
+async getByAssignee(assignedTo) {
     await this.delay();
     return this.data.filter(task => 
       task.assignedTo.toLowerCase().includes(assignedTo.toLowerCase())
+    );
+  }
+
+  async getByPriority(priority) {
+    await this.delay();
+    return this.data.filter(task => task.priority.toLowerCase() === priority.toLowerCase());
+  }
+
+  async getHousekeepingTasks() {
+    await this.delay();
+    return this.data.filter(task => 
+      task.title.toLowerCase().includes('clean') || 
+      task.title.toLowerCase().includes('housekeeping') ||
+      task.description.toLowerCase().includes('clean')
     );
   }
 }

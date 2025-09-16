@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Badge from '@/components/atoms/Badge';
-import Input from '@/components/atoms/Input';
-import Select from '@/components/atoms/Select';
-import FormField from '@/components/molecules/FormField';
-import Loading from '@/components/ui/Loading';
-import Error from '@/components/ui/Error';
-import Empty from '@/components/ui/Empty';
-import taskService from '@/services/api/taskService';
-import roomService from '@/services/api/roomService';
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import taskService from "@/services/api/taskService";
+import roomService from "@/services/api/roomService";
+import ApperIcon from "@/components/ApperIcon";
+import FormField from "@/components/molecules/FormField";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Badge from "@/components/atoms/Badge";
+import Select from "@/components/atoms/Select";
+import Empty from "@/components/ui/Empty";
+import Loading from "@/components/ui/Loading";
+import Error from "@/components/ui/Error";
 
 function Tasks() {
   const [tasks, setTasks] = useState([]);
@@ -25,18 +25,17 @@ function Tasks() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    roomId: '',
+roomId: '',
     assignedTo: '',
     priority: 'Medium',
     estimatedDuration: '',
     scheduledDate: '',
     status: 'Pending'
   });
+});
 
   const priorities = ['Low', 'Medium', 'High', 'Urgent'];
   const statuses = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
-
-  useEffect(() => {
     loadTasks();
     loadRooms();
   }, []);
@@ -63,15 +62,16 @@ function Tasks() {
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
+const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.assignedTo.toLowerCase().includes(searchTerm.toLowerCase());
+                         task.assignedTo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         getRoomNumber(task.roomId).toString().includes(searchTerm);
     const matchesFilter = filter === 'all' || task.status.toLowerCase() === filter.toLowerCase();
     return matchesSearch && matchesFilter;
   });
 
   const resetForm = () => {
-    setFormData({
+setFormData({
       title: '',
       description: '',
       roomId: '',
@@ -120,7 +120,7 @@ function Tasks() {
     if (!validateForm()) return;
 
     try {
-      if (taskToEdit) {
+if (taskToEdit) {
         await taskService.update(taskToEdit.Id, formData);
         toast.success('Task updated successfully!');
         setShowEditModal(false);
@@ -159,7 +159,7 @@ function Tasks() {
     }
   };
 
-  const getTaskStatusColor = (status) => {
+const getTaskStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending': return 'warning';
       case 'in progress': return 'info';
@@ -169,19 +169,23 @@ function Tasks() {
     }
   };
 
-  const getPriorityColor = (priority) => {
+const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
       case 'low': return 'success';
-      case 'medium': return 'info';
-      case 'high': return 'warning';
+      case 'medium': return 'warning';
+      case 'high': return 'error';
       case 'urgent': return 'error';
       default: return 'default';
     }
   };
-
-  const getRoomNumber = (roomId) => {
-    const room = rooms.find(r => r.Id === roomId);
+const getRoomNumber = (roomId) => {
+    const room = rooms.find(r => r.Id === parseInt(roomId));
     return room ? room.number : 'N/A';
+  };
+
+  const getRoomDetails = (roomId) => {
+    const room = rooms.find(r => r.Id === parseInt(roomId));
+    return room ? { number: room.number, type: room.type, status: room.status } : null;
   };
 
   if (loading) return <Loading message="Loading tasks..." />;
@@ -216,7 +220,7 @@ function Tasks() {
               onChange={(e) => setFilter(e.target.value)}
               className="w-full"
             >
-              <option value="all">All Tasks</option>
+<option value="all">All Tasks</option>
               <option value="pending">Pending</option>
               <option value="in progress">In Progress</option>
               <option value="completed">Completed</option>
@@ -258,8 +262,13 @@ function Tasks() {
 
                 <div className="space-y-2 mb-4 text-sm text-gray-600">
                   <div className="flex items-center">
-                    <ApperIcon name="MapPin" size={14} className="mr-2" />
+<ApperIcon name="MapPin" size={14} className="mr-2" />
                     Room {getRoomNumber(task.roomId)}
+                    {getRoomDetails(task.roomId)?.status && (
+                      <Badge variant={getRoomDetails(task.roomId).status.toLowerCase().replace(' ', '')} size="sm" className="ml-2">
+                        {getRoomDetails(task.roomId).status}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center">
                     <ApperIcon name="User" size={14} className="mr-2" />
@@ -287,7 +296,7 @@ function Tasks() {
                     <ApperIcon name="Edit" size={12} className="mr-1" />
                     Edit
                   </Button>
-                  {task.status !== 'Completed' && (
+{task.status !== 'Completed' && task.status !== 'Cancelled' && (
                     <Button
                       size="sm"
                       variant="secondary"
@@ -343,7 +352,7 @@ function Tasks() {
                     />
                   </FormField>
 
-                  <FormField label="Room">
+<FormField label="Room">
                     <Select
                       name="roomId"
                       value={formData.roomId}
@@ -352,7 +361,7 @@ function Tasks() {
                       <option value="">Select room</option>
                       {rooms.map(room => (
                         <option key={room.Id} value={room.Id}>
-                          Room {room.number} - {room.type}
+                          Room {room.number} - {room.type} ({room.status})
                         </option>
                       ))}
                     </Select>
@@ -467,7 +476,7 @@ function Tasks() {
                   </FormField>
 
                   <FormField label="Room">
-                    <Select
+<Select
                       name="roomId"
                       value={formData.roomId}
                       onChange={handleFormChange}
@@ -475,7 +484,7 @@ function Tasks() {
                       <option value="">Select room</option>
                       {rooms.map(room => (
                         <option key={room.Id} value={room.Id}>
-                          Room {room.number} - {room.type}
+                          Room {room.number} - {room.type} ({room.status})
                         </option>
                       ))}
                     </Select>
