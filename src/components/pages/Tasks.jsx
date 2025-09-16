@@ -29,13 +29,15 @@ roomId: '',
     assignedTo: '',
     priority: 'Medium',
     estimatedDuration: '',
+estimatedDuration: '',
     scheduledDate: '',
     status: 'Pending'
   });
-});
 
   const priorities = ['Low', 'Medium', 'High', 'Urgent'];
   const statuses = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
+
+  useEffect(() => {
     loadTasks();
     loadRooms();
   }, []);
