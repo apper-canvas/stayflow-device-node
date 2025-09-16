@@ -696,7 +696,6 @@ const unpaidReservations = reservations.filter(reservation =>
                       )}
                     </div>
                     
-                    <div className="flex items-center space-x-2">
 <div className="flex items-center space-x-2">
                       {(bill.paymentStatus === "Pending" || bill.paymentStatus === "Partial") && (
                         <Button
