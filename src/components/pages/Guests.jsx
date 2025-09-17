@@ -683,20 +683,6 @@ error={formErrors.phone}
                       <p className="text-gray-900">{guest.phone}</p>
                     </div>
                     
-                    <div>
-                      <div className="text-sm font-medium">{guest.idType}</div>
-                      <div className="text-xs text-gray-500">{guest.idNumber}</div>
-                    </div>
-                    
-                    <div>
-                      <p className="text-gray-900">
-                        {guest.address?.city && guest.address?.state 
-                          ? `${guest.address.city}, ${guest.address.state}`
-                          : "Not provided"
-                        }
-                      </p>
-                    </div>
-                    
 <div>
                       <Badge 
                         variant={guest.accountType === "corporate" ? "info" : "default"} 
@@ -722,7 +708,6 @@ error={formErrors.phone}
                       </p>
                       <p className="text-sm text-gray-600">{guest.address?.zipCode || ""}</p>
                     </div>
-
                     <div className="flex flex-col space-y-1">
                       {guest.vipStatus && (
                         <Badge variant="warning" size="sm">
@@ -744,21 +729,21 @@ error={formErrors.phone}
                       )}
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+<div className="flex items-center space-x-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleEditGuest(guest)}
+                        className="p-2"
                       >
-                        <ApperIcon name="Edit" size={14} className="mr-1" />
-                        Edit
+                        <ApperIcon name="Edit" size={14} />
                       </Button>
                       
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDeleteGuest(guest)}
-                        className="text-error-600 hover:text-error-700 hover:bg-error-50"
+                        className="text-error-600 hover:text-error-700 hover:bg-error-50 p-2"
                       >
                         <ApperIcon name="Trash2" size={14} />
                       </Button>
