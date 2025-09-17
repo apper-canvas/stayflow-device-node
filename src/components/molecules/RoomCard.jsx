@@ -94,11 +94,21 @@ const priorityColor = getStatusPriority(room.status);
         <p className="text-sm text-gray-600">
           <span className="font-medium">Last Cleaned:</span> {formatLastCleaned(room.lastCleaned)}
         </p>
-        {room.amenities && room.amenities.length > 0 && (
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">Amenities:</span> {room.amenities.slice(0, 2).join(", ")}
-            {room.amenities.length > 2 && ` +${room.amenities.length - 2} more`}
-          </p>
+{(() => {
+          // Normalize amenities to array format for safe processing
+          const amenitiesArray = Array.isArray(room.amenities) 
+            ? room.amenities 
+            : typeof room.amenities === 'string' 
+              ? room.amenities.split(',').map(item => item.trim()).filter(item => item.length > 0)
+              : [];
+          
+          return amenitiesArray.length > 0 && (
+            <p className="text-sm text-gray-600">
+              <span className="font-medium">Amenities:</span> {amenitiesArray.slice(0, 2).join(", ")}
+              {amenitiesArray.length > 2 && ` +${amenitiesArray.length - 2} more`}
+            </p>
+          );
+        })()}
         )}
         {room.notes && (
           <p className="text-xs text-gray-500 italic">
