@@ -109,7 +109,6 @@ const priorityColor = getStatusPriority(room.status);
             </p>
           );
         })()}
-        )}
         {room.notes && (
           <p className="text-xs text-gray-500 italic">
             <span className="font-medium">Notes:</span> {room.notes}
