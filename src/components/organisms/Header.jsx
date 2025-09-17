@@ -35,13 +35,25 @@ const Header = ({ onMenuClick }) => {
             </div>
             
             <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-full p-2">
+<div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-full p-2">
                 <ApperIcon name="User" size={16} className="text-white" />
               </div>
               <div className="hidden sm:block">
                 <p className="text-sm font-medium text-gray-900">Hotel Manager</p>
                 <p className="text-xs text-gray-600">Administrator</p>
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const { ApperUI } = window.ApperSDK;
+                  ApperUI.logout();
+                }}
+                className="ml-3"
+              >
+                <ApperIcon name="LogOut" size={14} className="mr-1" />
+                Logout
+              </Button>
             </div>
           </div>
         </div>
