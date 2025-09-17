@@ -641,7 +641,7 @@ const unpaidReservations = reservations.filter(reservation =>
           <>
             {/* Table Header */}
             <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 text-sm font-medium text-gray-700">
+<div className="billing-grid text-sm font-medium text-gray-700 px-6">
                 <div>Bill ID</div>
                 <div>Guest</div>
                 <div>Room</div>
@@ -653,9 +653,9 @@ const unpaidReservations = reservations.filter(reservation =>
 
             {/* Table Body */}
             <div className="divide-y divide-gray-200">
-              {filteredBills.map((bill) => (
+{filteredBills.map((bill) => (
                 <div key={bill.Id} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 items-center">
+                  <div className="billing-grid items-center">
                     <div>
                       <p className="font-medium text-gray-900">#{bill.Id}</p>
                       <p className="text-sm text-gray-600">

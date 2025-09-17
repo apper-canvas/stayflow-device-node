@@ -96,6 +96,19 @@
 
 .shimmer {
   background: linear-gradient(90deg, #f1f5f9 0px, #e2e8f0 40px, #f1f5f9 80px);
-  background-size: 200px;
+background-size: 200px;
   animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Billing page grid layout */
+.billing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 0.8fr 1.1fr 0.9fr 1.6fr;
+  gap: 1rem;
+}
+
+@media (max-width: 1023px) {
+  .billing-grid {
+    grid-template-columns: 1fr;
+  }
 }
