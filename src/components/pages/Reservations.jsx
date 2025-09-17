@@ -374,21 +374,33 @@ const result = window.confirm(
                       <p className="text-sm text-gray-600">{reservation.roomType}</p>
                     </div>
                     
-                    <div>
+<div>
                       <p className="font-medium text-gray-900">
-                        {format(new Date(reservation.checkIn), "MMM d, yyyy")}
+                        {reservation.checkIn && new Date(reservation.checkIn) && !isNaN(new Date(reservation.checkIn)) 
+                          ? format(new Date(reservation.checkIn), "MMM d, yyyy")
+                          : "Invalid Date"
+                        }
                       </p>
                       <p className="text-sm text-gray-600">
-                        {format(new Date(reservation.checkIn), "h:mm a")}
+                        {reservation.checkIn && new Date(reservation.checkIn) && !isNaN(new Date(reservation.checkIn))
+                          ? format(new Date(reservation.checkIn), "h:mm a") 
+                          : "Invalid Time"
+                        }
                       </p>
                     </div>
                     
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {format(new Date(reservation.checkOut), "MMM d, yyyy")}
+<p className="font-medium text-gray-900">
+                        {reservation.checkOut && new Date(reservation.checkOut) && !isNaN(new Date(reservation.checkOut))
+                          ? format(new Date(reservation.checkOut), "MMM d, yyyy")
+                          : "Invalid Date"
+                        }
                       </p>
                       <p className="text-sm text-gray-600">
-                        {format(new Date(reservation.checkOut), "h:mm a")}
+                        {reservation.checkOut && new Date(reservation.checkOut) && !isNaN(new Date(reservation.checkOut))
+                          ? format(new Date(reservation.checkOut), "h:mm a")
+                          : "Invalid Time"
+                        }
                       </p>
                     </div>
                     
